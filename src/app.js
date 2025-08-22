@@ -43,21 +43,57 @@ const { adminAuth, userAuth } = require("./middlewares/auth");
 // );
 
 //middleware for specific routes
-app.use("/admin", adminAuth);
 
-app.get("/admin/getAllData", (req, res) => {
-  console.log("hello from admin");
-  res.send("this is admin data");
-});
-app.get("/admin", (req, res) => {
-  console.log("hello from original admin");
-  res.send("this is admin  original data");
+// app.use("/admin", adminAuth);
+
+// app.get("/admin/getAllData", (req, res) => {
+//   console.log("hello from admin");
+//   res.send("this is admin data");
+// });
+// app.get("/admin", (req, res) => {
+//   console.log("hello from original admin");
+//   res.send("this is admin  original data");
+// });
+
+// app.use("/user", userAuth, (req, res) => {
+//   res.send("this is user data");
+// });
+
+//database connection
+const { connectDB } = require("./config/database");
+const { UserModel } = require("./models/user");
+
+app.post("/signup", async (req, res) => {
+  //creating the instance of user model
+  const userObj = {
+    firstName: "akshay",
+    lastName: "saini",
+    emailId: "raviv@gmail.com",
+    password: "12345",
+
+    gender: "Male",
+  };
+
+  const user = new UserModel(userObj);
+  await user
+    .save()
+    .then((data) => {
+      console.log(data);
+      res.send("user signed up successfully");
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).send("Error signing up user");
+    });
 });
 
-app.use("/user", userAuth, (req, res) => {
-  res.send("this is user data");
-});
-
-app.listen(7777, () => {
-  console.log("Server is running on port 7777");
-});
+connectDB()
+  .then(() => {
+    console.log("Database connected successfully");
+    app.listen(7777, () => {
+      console.log("Server is running on port 7777");
+    });
+  })
+  .catch((error) => {
+    console.error("Database connection failed:", error);
+  });
