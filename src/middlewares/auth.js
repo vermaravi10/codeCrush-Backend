@@ -20,7 +20,7 @@ const userAuth = async (req, res, next) => {
 
     const decoded = await jwt.verify(token, "devTinderSecretKey");
     if (!decoded) {
-      throw new Error("Unauthorized: Invalid token");
+      throw new Error("Unauthorized: Please login again");
     }
 
     let user = await UserModel.findById(decoded._id);
