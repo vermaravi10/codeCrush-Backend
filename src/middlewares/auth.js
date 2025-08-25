@@ -1,3 +1,6 @@
+const jwt = require("jsonwebtoken");
+const { UserModel } = require("../models/User");
+
 const adminAuth = (req, res, next) => {
   let token = "xyz";
   if (token === "xyz") {
@@ -8,13 +11,27 @@ const adminAuth = (req, res, next) => {
   }
 };
 
-const userAuth = (req, res, next) => {
-  let token = "1212";
-  if (token === "1212") {
-    console.log("Auth middleware called");
+const userAuth = async (req, res, next) => {
+  try {
+    const { token } = req.cookies;
+    if (!token) {
+      throw new Error("Unauthorized: No token provided");
+    }
+
+    const decoded = await jwt.verify(token, "devTinderSecretKey");
+    if (!decoded) {
+      throw new Error("Unauthorized: Invalid token");
+    }
+
+    let user = await UserModel.findById(decoded._id);
+    if (!user) {
+      throw new Error("Unauthorized: User not found");
+    }
+
+    req.user = user;
     next();
-  } else {
-    res.status(401).send("unauthorized");
+  } catch (err) {
+    res.status(401).send("Unauthorized: " + err.message);
   }
 };
 

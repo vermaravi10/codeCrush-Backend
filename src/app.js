@@ -1,90 +1,132 @@
 const express = require("express");
 
 const app = express();
+const bcrypt = require("bcrypt");
 
-const { adminAuth, userAuth } = require("./middlewares/auth");
+const { userAuth } = require("./middlewares/auth");
 
-//single request handler and regext routes
-
-// app.use("/", (req, res) => {
-//   res.send("hello from the server");
-// });
-
-// app.use("/test/result/:userID", (req, res) => {
-//   res.send("this is test result");
-//   console.log(req.params);
-// });
-
-// app.get(/^\/tes?t$/, (req, res) => {
-//   res.send("this is test");
-// });
-
-//multiple request handlers
-
-// app.use(
-//   "/user",
-//   (req, res, next) => {
-//     // res.send("hello user from the server");
-//     next();
-//   },
-//   (req, res, next) => {
-//     // res.send("hello from user2");
-//     next();
-//   },
-//   (req, res) => {
-//     // res.send("hello from user2");
-//   },
-//   (req, res) => {
-//     res.send("hello from user2");
-//   },
-//   (req, res) => {
-//     res.send("hello from user2");
-//   }
-// );
-
-//middleware for specific routes
-
-// app.use("/admin", adminAuth);
-
-// app.get("/admin/getAllData", (req, res) => {
-//   console.log("hello from admin");
-//   res.send("this is admin data");
-// });
-// app.get("/admin", (req, res) => {
-//   console.log("hello from original admin");
-//   res.send("this is admin  original data");
-// });
-
-// app.use("/user", userAuth, (req, res) => {
-//   res.send("this is user data");
-// });
+const { dataValidation } = require("./utils/validations");
+const cookieParser = require("cookie-parser");
 
 //database connection
 const { connectDB } = require("./config/database");
-const { UserModel } = require("./models/user");
+const { UserModel } = require("./models/User");
+
+app.use(express.json()); // to parse JSON bodies
+app.use(cookieParser()); // to parse cookies
 
 app.post("/signup", async (req, res) => {
-  //creating the instance of user model
-  const userObj = {
-    firstName: "akshay",
-    lastName: "saini",
-    emailId: "raviv@gmail.com",
-    password: "12345",
+  try {
+    dataValidation(req);
 
-    gender: "Male",
-  };
+    const { firstName, lastName, emailId, password } = req.body;
 
-  const user = new UserModel(userObj);
-  await user
-    .save()
-    .then((data) => {
-      console.log(data);
-      res.send("user signed up successfully");
-    })
-    .catch((error) => {
-      console.log(error);
-      res.status(500).send("Error signing up user");
+    const hashPassword = await bcrypt.hash(password, 10);
+    const user = new UserModel({
+      firstName,
+      lastName,
+      emailId,
+      password: hashPassword,
     });
+    await user.save();
+    res.send("user signed up successfully");
+  } catch (err) {
+    res.status(500).send("Error signing up user" + err.message);
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
+    const user = await UserModel.findOne({ emailId });
+    if (!user) {
+      throw new Error("Invalid Credientials");
+    }
+    const isPasswordValid = await user.validatePassword(password);
+    if (!isPasswordValid) {
+      throw new Error("Invalid password");
+    }
+
+    const token = await user.createJwt();
+    res.cookie("token", token);
+    res.send("User logged in successfully");
+  } catch (err) {
+    res.status(500).send("Error logging in user: " + err.message);
+  }
+});
+
+app.get("/profile", userAuth, async (req, res) => {
+  try {
+    user = req.user;
+    res.send(user);
+  } catch (err) {
+    res.status(500).send("Something went wrong while fetching users");
+  }
+});
+
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+  try {
+    res.send(`${req.user.firstName} sent the connection request`);
+  } catch (err) {
+    res
+      .status(500)
+      .send("Something went wrong while sending connection request");
+  }
+});
+app.get("/user", userAuth, async (req, res) => {
+  try {
+    const users = await UserModel.find({ emailId: req.body.emailId });
+    if (users.length > 0) {
+      res.send(users);
+    } else {
+      res.status(404).send("no user found");
+    }
+  } catch (err) {
+    res.status(500).send("Something went wrong while fetching users");
+  }
+});
+
+app.get("/feed", userAuth, async (req, res) => {
+  try {
+    const users = await UserModel.find({});
+    if (users.length > 0) {
+      res.send(users);
+    } else {
+      res.status(404).send("no user found");
+    }
+  } catch (err) {
+    res.status(500).send("Something went wrong while fetching users");
+  }
+});
+
+app.delete("/user", userAuth, async (req, res) => {
+  try {
+    await UserModel.findByIdAndDelete(req.body.userId);
+    res.send("user deleted successfully");
+  } catch (err) {
+    res
+      .status(500)
+      .send("Something went wrong while fetching users" + err.message);
+  }
+});
+
+app.patch("/user/:userId", userAuth, async (req, res) => {
+  try {
+    const allowedFields = ["about", "photo_url", "skills"];
+    const updateFields = Object.keys(req.body);
+
+    const isValidUpdate = updateFields.every((field) =>
+      allowedFields.includes(field)
+    );
+    if (!isValidUpdate) {
+      throw new Error("Invalid update fields");
+    }
+
+    await UserModel.findByIdAndUpdate(req.params.userId, req.body);
+    res.send("user updated successfully");
+  } catch (err) {
+    res.status(500).send("Something went wrong while updating user");
+  }
 });
 
 connectDB()
