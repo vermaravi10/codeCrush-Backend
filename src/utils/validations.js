@@ -1,10 +1,12 @@
 const validator = require("validator");
-const { UserModel } = require("../models/User");
+const { User } = require("../models/User");
 
 function dataValidation(req) {
+  console.log("🚀 ~ dataValidation ~ req:", req.body.data);
   const errors = {};
 
-  const { firstName, lastName, emailId, password } = req.body || {};
+  const { firstName, lastName, emailId, password } = req.body.data || {};
+  console.log("🚀 ~ dataValidation ~ firstName:", firstName);
 
   if (
     !firstName ||
@@ -37,7 +39,7 @@ function dataValidation(req) {
 const validateProfileEditData = async (req) => {
   loggedInUser = req.user;
   const updates = Object.keys(req.body);
-  const allowedUpdates = ["gender", "about", "photoUrl", "skills"];
+  const allowedUpdates = ["gender", "about", "photo_url", "skills"];
   const isValidOperation = updates?.every((update) =>
     allowedUpdates.includes(update)
   );

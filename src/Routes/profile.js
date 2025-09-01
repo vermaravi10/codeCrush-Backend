@@ -1,14 +1,16 @@
 const express = require("express");
 const profileRouter = express.Router();
 const { userAuth } = require("../middlewares/auth");
-const { UserModel } = require("../models/User");
+const { User } = require("../models/User");
 const { validateProfileEditData } = require("../utils/validations");
 const bycrpt = require("bcrypt");
 
 profileRouter.get("/profile/view", userAuth, async (req, res) => {
   try {
-    user = req.user;
-    res.send(user);
+    const user = req.user;
+    res
+      .status(200)
+      .json({ message: "Profile fetched successfully", data: user });
   } catch (err) {
     res.status(500).send("Something went wrong while fetching users");
   }
@@ -17,7 +19,7 @@ profileRouter.get("/profile/view", userAuth, async (req, res) => {
 profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
   try {
     const updatedData = await validateProfileEditData(req);
-    res.json({
+    res.status(200).json({
       message: "Profile updated successfully",
       data: updatedData,
     });

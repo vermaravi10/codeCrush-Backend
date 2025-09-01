@@ -71,6 +71,8 @@ const userSchema = new mongoose.Schema(
     photo_url: {
       type: String,
       trim: true,
+      default:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLRMYH57Eg7Mcu5fyGw4bd6dLIADSfM6PLbQ&s",
       validate: {
         validator: function (value) {
           if (value && !validator.isURL(value)) {
@@ -94,11 +96,11 @@ userSchema.methods.validatePassword = async function (inputPassword) {
 userSchema.methods.createJwt = async function () {
   const user = this;
   const token = await jwt.sign({ _id: user._id }, "devTinderSecretKey", {
-    expiresIn: "1m",
+    expiresIn: "1d",
   });
 
   return token;
 };
 
-const UserModel = mongoose.model("User", userSchema);
-module.exports = { UserModel };
+const User = mongoose.model("User", userSchema);
+module.exports = { User };

@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { UserModel } = require("../models/User");
+const { User } = require("../models/User");
 
 const adminAuth = (req, res, next) => {
   let token = "xyz";
@@ -15,17 +15,17 @@ const userAuth = async (req, res, next) => {
   try {
     const { token } = req.cookies;
     if (!token) {
-      throw new Error("Unauthorized: No token provided");
+      res.status(401).send("Please Login");
     }
 
     const decoded = await jwt.verify(token, "devTinderSecretKey");
     if (!decoded) {
-      throw new Error("Unauthorized: Please login again");
+      throw new Error(" Please login again");
     }
 
-    let user = await UserModel.findById(decoded._id);
+    let user = await User.findById(decoded._id);
     if (!user) {
-      throw new Error("Unauthorized: User not found");
+      throw new Error(" User not found");
     }
 
     req.user = user;
