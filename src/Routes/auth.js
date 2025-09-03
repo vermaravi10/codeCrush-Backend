@@ -19,6 +19,8 @@ authRouter.post("/signup", async (req, res) => {
       photo_url,
     });
     await user.save();
+    const token = await user.createJwt();
+    res.cookie("token", token);
     res.json({ data: user, message: "User signed up successfully" });
   } catch (err) {
     console.log("🚀 ~ err:", err);
