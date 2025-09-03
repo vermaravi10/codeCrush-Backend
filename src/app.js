@@ -4,7 +4,13 @@ const cookieParser = require("cookie-parser");
 const { connectDB } = require("./config/database");
 
 var cors = require("cors");
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+const allowed = ["https://54.175.148.69", "http://localhost:5173"];
+app.use(
+  cors({
+    origin: (origin, cb) => cb(null, !origin || allowed.includes(origin)),
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(cookieParser());
